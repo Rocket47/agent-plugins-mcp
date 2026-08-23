@@ -35,28 +35,14 @@ ASPNETCORE_URLS=http://127.0.0.1:5050 \
   dotnet run --project src/AgentPluginsMcp.Server/AgentPluginsMcp.Server.csproj
 ```
 
+
+
 ## Сборка приложения
 
 ```bash
 dotnet build AgentPluginsMcp.slnx --configuration Release
 ./scripts/publish.sh
 ```
-
-Windows PowerShell:
-
-```powershell
-dotnet build AgentPluginsMcp.slnx --configuration Release
-./scripts/publish.ps1
-```
-
-Готовое framework-dependent приложение появится в `bin/`. Запуск опубликованной версии:
-
-```bash
-ASPNETCORE_URLS=http://127.0.0.1:5000 \
-  dotnet bin/AgentPluginsMcp.Server.dll
-```
-
-Каталог `bin/` создаётся при публикации и не коммитится.
 
 ## Agent Plugin
 
@@ -73,8 +59,6 @@ ASPNETCORE_URLS=http://127.0.0.1:5000 \
   }
 }
 ```
-
-Перед использованием локального плагина сервер необходимо запустить отдельно. Для удалённого развёртывания замените URL в `mcp.json` на публичный HTTPS endpoint.
 
 ## Подключение к Codex
 
@@ -107,8 +91,3 @@ dotnet run --project tests/AgentPluginsMcp.SmokeTests/AgentPluginsMcp.SmokeTests
 curl http://127.0.0.1:5000/health
 ```
 
-## Источники
-
-- [Agent Plugins 1.0.0](https://agent-plugins.org/)
-- [Формат `mcp.json`](https://agent-plugins.org/plugin-authors/mcp-servers)
-- [MCP 2026-07-28](https://blog.modelcontextprotocol.io/posts/2026-07-28/)

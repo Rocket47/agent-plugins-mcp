@@ -75,14 +75,15 @@ try
         "echo",
         new Dictionary<string, object?> { ["message"] = "MCP 2026 works" },
         cancellationToken: timeout.Token);
-    var echoedText = result.Content
+    
+    var echoText = result.Content
         .OfType<TextContentBlock>()
         .Single()
         .Text;
 
-    if (echoedText != "MCP 2026 works")
+    if (echoText != "MCP 2026 works")
     {
-        throw new InvalidOperationException($"Unexpected echo result: {echoedText}");
+        throw new InvalidOperationException($"Unexpected echo result: {echoText}");
     }
 
     Console.WriteLine(
