@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="src/AgentPluginsMcp.Server/AgentPluginsMcp.Server.csproj" />
+  <Project Path="tests/AgentPluginsMcp.SmokeTests/AgentPluginsMcp.SmokeTests.csproj" />
+</Solution>
+
