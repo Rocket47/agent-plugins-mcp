@@ -38,7 +38,6 @@ webBuilder.Services
     .AddMcpServer()
     .WithHttpTransport(options =>
     {
-        // MCP 2026-07-28 removes transport sessions and Mcp-Session-Id.
         options.Stateless = true;
     })
     .WithTools<DeveloperTools>();

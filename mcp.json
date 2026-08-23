@@ -5,13 +5,7 @@
       "type": "stdio",
       "command": "dotnet",
       "args": [
-        "run",
-        "--project",
-        "${PLUGIN_ROOT}/src/AgentPluginsMcp.Server/AgentPluginsMcp.Server.csproj",
-        "--configuration",
-        "Release",
-        "--no-launch-profile",
-        "--",
+        "${PLUGIN_ROOT}/bin/AgentPluginsMcp.Server.dll",
         "--transport",
         "stdio"
       ],
@@ -19,4 +13,3 @@
     }
   }
 }
-

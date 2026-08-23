@@ -3,17 +3,13 @@ using ModelContextProtocol.Protocol;
 
 var serverAssembly = Path.GetFullPath(Path.Combine(
     Directory.GetCurrentDirectory(),
-    "src",
-    "AgentPluginsMcp.Server",
     "bin",
-    "Release",
-    "net10.0",
     "AgentPluginsMcp.Server.dll"));
 
 if (!File.Exists(serverAssembly))
 {
     throw new FileNotFoundException(
-        "Build the server in Release configuration before running the smoke test.",
+        "Run scripts/publish.sh or scripts/publish.ps1 before the smoke test.",
         serverAssembly);
 }
 

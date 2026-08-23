@@ -15,6 +15,34 @@
 - .NET SDK 10.0 или новее;
 - клиент с поддержкой MCP `2026-07-28` либо совместимый клиент предыдущей версии.
 
+## Сборка исполняемого приложения
+
+Репозиторий содержит обычное исполняемое ASP.NET Core-приложение и solution `AgentPluginsMcp.slnx`:
+
+```bash
+dotnet build AgentPluginsMcp.slnx --configuration Release
+./scripts/publish.sh
+```
+
+Windows PowerShell:
+
+```powershell
+dotnet build AgentPluginsMcp.slnx --configuration Release
+./scripts/publish.ps1
+```
+
+Публикация создаёт в `bin/` готовое framework-dependent приложение:
+
+```text
+bin/
+├── AgentPluginsMcp.Server       # нативный launcher на macOS/Linux
+├── AgentPluginsMcp.Server.exe   # launcher при публикации на Windows
+├── AgentPluginsMcp.Server.dll   # переносимая .NET-сборка
+└── *.deps.json / *.runtimeconfig.json / зависимости
+```
+
+Именно опубликованную `bin/AgentPluginsMcp.Server.dll`, а не исходный проект, запускает `mcp.json`. Каталог `bin/` не коммитится: он создаётся при сборке и включается в распространяемый архив Agent Plugin.
+
 ## Быстрый старт: HTTP
 
 ```bash
@@ -56,7 +84,13 @@ dotnet run \
     └── AgentPluginsMcp.Server/
 ```
 
-`mcp.json` объявляет stdio-сервер. Совместимый клиент подставляет `${PLUGIN_ROOT}` и запускает проект через `dotnet`. Для готового к распространению пакета рекомендуется опубликовать self-contained executable и заменить `command` на путь вида `./bin/developer-utilities` — поле `command` не является shell-командой и не поддерживает подстановку `${PLUGIN_ROOT}`.
+`mcp.json` объявляет stdio-сервер. Совместимый клиент подставляет `${PLUGIN_ROOT}` в путь к опубликованной сборке и выполняет эквивалент команды:
+
+```bash
+dotnet "${PLUGIN_ROOT}/bin/AgentPluginsMcp.Server.dll" --transport stdio
+```
+
+Подстановка применяется в `args`, но не в `command`, поэтому исполняемой командой указан доступный через `PATH` хост `dotnet`.
 
 Пример удалённой конфигурации после публикации HTTP-сервера:
 
@@ -77,7 +111,8 @@ dotnet run \
 ## Проверка
 
 ```bash
-dotnet build src/AgentPluginsMcp.Server/AgentPluginsMcp.Server.csproj --configuration Release
+dotnet build AgentPluginsMcp.slnx --configuration Release
+./scripts/publish.sh
 dotnet run --project tests/AgentPluginsMcp.SmokeTests/AgentPluginsMcp.SmokeTests.csproj
 ```
 
@@ -88,17 +123,9 @@ curl http://localhost:5000/health
 ```
 
 Для полного диалога MCP используйте клиент или [MCP Inspector](https://github.com/modelcontextprotocol/inspector).
-
-## Структура и принятые решения
-
-Сервер намеренно не хранит сессионное состояние. В MCP `2026-07-28` удалены обязательные `initialize`/`initialized` и `Mcp-Session-Id`; каждый запрос самодостаточен, а предварительное обнаружение возможностей выполняется через `server/discover`. Это позволяет масштабировать HTTP-сервер без sticky sessions.
-
-Agent Plugins не заменяет MCP: `plugin.json` описывает пакет, `mcp.json` — способ подключения, а официальный MCP SDK реализует сам протокол.
-
 ## Источники
 
 - [Agent Plugins 1.0.0](https://agent-plugins.org/)
 - [Формат `plugin.json`](https://agent-plugins.org/plugin-authors/manifest)
 - [Формат `mcp.json`](https://agent-plugins.org/plugin-authors/mcp-servers)
 - [MCP 2026-07-28](https://blog.modelcontextprotocol.io/posts/2026-07-28/)
-- [Официальный C# SDK](https://github.com/modelcontextprotocol/csharp-sdk)
