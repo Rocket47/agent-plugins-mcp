@@ -16,7 +16,7 @@ app.MapGet("/health", () => Results.Ok(new
 {
     status = "ok",
     service = "developer-utilities-mcp",
-    protocol = "2026-07-28"
+    protocol = DateOnly.FromDateTime(DateTime.Now)
 }));
 app.MapMcp("/mcp");
 

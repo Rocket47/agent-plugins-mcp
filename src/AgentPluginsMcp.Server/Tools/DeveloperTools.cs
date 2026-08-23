@@ -13,7 +13,7 @@ public sealed class DeveloperTools
         [Description("Text to return.")] string message) => message;
 
     [McpServerTool(Name = "get_utc_time")]
-    public static string GetUtcTime() => DateTimeOffset.UtcNow.ToString("O");
+    public static string GetUtcTime() => DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
 
     [McpServerTool(Name = "calculate_sha256")]
     public static string CalculateSha256(
@@ -22,41 +22,4 @@ public sealed class DeveloperTools
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(text));
         return Convert.ToHexString(bytes).ToLowerInvariant();
     }
-
-    [McpServerTool(Name = "analyze_text")]
-    public static TextStatistics AnalyzeText(
-        [Description("Text to analyze.")] string text)
-    {
-        ArgumentNullException.ThrowIfNull(text);
-
-        var wordCount = 0;
-        var insideWord = false;
-
-        foreach (var rune in text.EnumerateRunes())
-        {
-            if (Rune.IsWhiteSpace(rune))
-            {
-                insideWord = false;
-            }
-            else if (!insideWord)
-            {
-                wordCount++;
-                insideWord = true;
-            }
-        }
-
-        var lineCount = (text.Length == 0 ? 0 : 1) + text.Count(t => t == '\n');
-
-        return new TextStatistics(
-            Characters: text.Length,
-            UnicodeScalars: text.EnumerateRunes().Count(),
-            Words: wordCount,
-            Lines: lineCount);
-    }
 }
-
-public sealed record TextStatistics(
-    int Characters,
-    int UnicodeScalars,
-    int Words,
-    int Lines);

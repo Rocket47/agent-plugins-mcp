@@ -35,7 +35,6 @@ try
         }
         catch (HttpRequestException) when (!timeout.IsCancellationRequested)
         {
-            // The application is still starting.
         }
 
         await Task.Delay(100, timeout.Token);
@@ -60,7 +59,6 @@ try
     var tools = await client.ListToolsAsync(cancellationToken: timeout.Token);
     var expectedTools = new[]
     {
-        "analyze_text",
         "calculate_sha256",
         "echo",
         "get_utc_time"

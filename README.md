@@ -1,6 +1,6 @@
 # Developer Utilities MCP
 
-Stateless Streamable HTTP MCP-сервер на .NET 10. Использует официальный C# SDK 2.0 и поддерживает MCP `2026-07-28`.
+Stateless Streamable HTTP MCP-сервер на .NET 10.
 
 ## Возможности
 
@@ -9,19 +9,11 @@ Stateless Streamable HTTP MCP-сервер на .NET 10. Использует о
 - `echo` — возвращает переданный текст;
 - `get_utc_time` — возвращает текущее UTC-время;
 - `calculate_sha256` — вычисляет SHA-256;
-- `analyze_text` — считает символы, Unicode-кодовые точки, слова и строки.
 
 Доступны два HTTP endpoint:
 
-- `GET /health` — проверка состояния;
-- `POST /mcp` — stateless Streamable HTTP MCP.
-
-STDIO transport намеренно не поддерживается.
-
-## Требования
-
-- .NET SDK 10.0 или новее;
-- MCP-клиент с поддержкой Streamable HTTP.
+- `GET /health`
+- `POST /mcp`.
 
 ## Запуск из исходников
 
@@ -120,4 +112,3 @@ curl http://127.0.0.1:5000/health
 - [Agent Plugins 1.0.0](https://agent-plugins.org/)
 - [Формат `mcp.json`](https://agent-plugins.org/plugin-authors/mcp-servers)
 - [MCP 2026-07-28](https://blog.modelcontextprotocol.io/posts/2026-07-28/)
-- [Официальный C# SDK](https://github.com/modelcontextprotocol/csharp-sdk)
