@@ -1,0 +1,22 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "developer-utilities": {
+      "type": "stdio",
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "${PLUGIN_ROOT}/src/AgentPluginsMcp.Server/AgentPluginsMcp.Server.csproj",
+        "--configuration",
+        "Release",
+        "--no-launch-profile",
+        "--",
+        "--transport",
+        "stdio"
+      ],
+      "cwd": "${PLUGIN_ROOT}"
+    }
+  }
+}
+

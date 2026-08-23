@@ -1,0 +1,12 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "developer-utilities",
+  "version": "1.0.0",
+  "description": "Stateless developer utility tools served over MCP by .NET.",
+  "keywords": [
+    "mcp",
+    "dotnet",
+    "developer-tools",
+    "agent-plugin"
+  ]
+}
