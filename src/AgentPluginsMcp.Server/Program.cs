@@ -1,40 +1,8 @@
 using AgentPluginsMcp.Server.Tools;
-using ModelContextProtocol.Server;
 
-const string TransportOption = "--transport";
+var builder = WebApplication.CreateBuilder(args);
 
-var transport = GetOption(args, TransportOption)
-    ?? Environment.GetEnvironmentVariable("MCP_TRANSPORT")
-    ?? "http";
-
-if (transport.Equals("stdio", StringComparison.OrdinalIgnoreCase))
-{
-    var builder = Host.CreateApplicationBuilder(args);
-
-    builder.Logging.AddConsole(options =>
-    {
-        options.LogToStandardErrorThreshold = LogLevel.Trace;
-    });
-
-    builder.Services
-        .AddMcpServer()
-        .WithStdioServerTransport()
-        .WithTools<DeveloperTools>();
-
-    await builder.Build().RunAsync();
-    return;
-}
-
-if (!transport.Equals("http", StringComparison.OrdinalIgnoreCase))
-{
-    throw new ArgumentException(
-        $"Unsupported transport '{transport}'. Use 'http' or 'stdio'.",
-        TransportOption);
-}
-
-var webBuilder = WebApplication.CreateBuilder(args);
-
-webBuilder.Services
+builder.Services
     .AddMcpServer()
     .WithHttpTransport(options =>
     {
@@ -42,7 +10,7 @@ webBuilder.Services
     })
     .WithTools<DeveloperTools>();
 
-var app = webBuilder.Build();
+var app = builder.Build();
 
 app.MapGet("/health", () => Results.Ok(new
 {
@@ -53,17 +21,3 @@ app.MapGet("/health", () => Results.Ok(new
 app.MapMcp("/mcp");
 
 await app.RunAsync();
-
-static string? GetOption(string[] arguments, string option)
-{
-    for (var index = 0; index < arguments.Length - 1; index++)
-    {
-        if (arguments[index].Equals(option, StringComparison.OrdinalIgnoreCase))
-        {
-            return arguments[index + 1];
-        }
-    }
-
-    return null;
-}
-

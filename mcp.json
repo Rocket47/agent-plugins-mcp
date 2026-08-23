@@ -2,14 +2,8 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
   "mcpServers": {
     "developer-utilities": {
-      "type": "stdio",
-      "command": "dotnet",
-      "args": [
-        "${PLUGIN_ROOT}/bin/AgentPluginsMcp.Server.dll",
-        "--transport",
-        "stdio"
-      ],
-      "cwd": "${PLUGIN_ROOT}"
+      "type": "streamable-http",
+      "url": "http://127.0.0.1:5000/mcp"
     }
   }
 }

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
 
@@ -6,60 +7,94 @@ var serverAssembly = Path.GetFullPath(Path.Combine(
     "bin",
     "AgentPluginsMcp.Server.dll"));
 
-if (!File.Exists(serverAssembly))
+using var server = Process.Start(new ProcessStartInfo
 {
-    throw new FileNotFoundException(
-        "Run scripts/publish.sh or scripts/publish.ps1 before the smoke test.",
-        serverAssembly);
-}
+    FileName = "dotnet",
+    UseShellExecute = false,
+    Environment = { ["ASPNETCORE_URLS"] = "http://127.0.0.1:5050" },
+    ArgumentList = { serverAssembly }
+}) ?? throw new InvalidOperationException("Unable to start the MCP server.");
 
-var transport = new StdioClientTransport(new StdioClientTransportOptions
+try
 {
-    Name = "developer-utilities-smoke-test",
-    Command = "dotnet",
-    Arguments = [serverAssembly, "--transport", "stdio"],
-    StandardErrorLines = line => Console.Error.WriteLine($"server: {line}")
-});
+    using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+    using var httpClient = new HttpClient();
 
-using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-await using var client = await McpClient.CreateAsync(
-    transport,
-    new McpClientOptions
+    while (true)
     {
-        ProtocolVersion = "2026-07-28",
-        InitializationTimeout = TimeSpan.FromSeconds(10)
-    },
-    cancellationToken: timeout.Token);
+        try
+        {
+            using var healthResponse = await httpClient.GetAsync(
+                "http://127.0.0.1:5050/health",
+                timeout.Token);
 
-var tools = await client.ListToolsAsync(cancellationToken: timeout.Token);
-var expectedTools = new[]
-{
-    "analyze_text",
-    "calculate_sha256",
-    "echo",
-    "get_utc_time"
-};
-var actualTools = tools.Select(tool => tool.Name).Order().ToArray();
+            if (healthResponse.IsSuccessStatusCode)
+            {
+                break;
+            }
+        }
+        catch (HttpRequestException) when (!timeout.IsCancellationRequested)
+        {
+            // The application is still starting.
+        }
 
-if (!actualTools.SequenceEqual(expectedTools))
-{
-    throw new InvalidOperationException(
-        $"Unexpected tools: {string.Join(", ", actualTools)}");
+        await Task.Delay(100, timeout.Token);
+    }
+
+    var transport = new HttpClientTransport(new HttpClientTransportOptions
+    {
+        Name = "developer-utilities-smoke-test",
+        Endpoint = new Uri("http://127.0.0.1:5050/mcp"),
+        TransportMode = HttpTransportMode.StreamableHttp
+    });
+
+    await using var client = await McpClient.CreateAsync(
+        transport,
+        new McpClientOptions
+        {
+            ProtocolVersion = "2026-07-28",
+            InitializationTimeout = TimeSpan.FromSeconds(10)
+        },
+        cancellationToken: timeout.Token);
+
+    var tools = await client.ListToolsAsync(cancellationToken: timeout.Token);
+    var expectedTools = new[]
+    {
+        "analyze_text",
+        "calculate_sha256",
+        "echo",
+        "get_utc_time"
+    };
+    var actualTools = tools.Select(tool => tool.Name).Order().ToArray();
+
+    if (!actualTools.SequenceEqual(expectedTools))
+    {
+        throw new InvalidOperationException(
+            $"Unexpected tools: {string.Join(", ", actualTools)}");
+    }
+
+    var result = await client.CallToolAsync(
+        "echo",
+        new Dictionary<string, object?> { ["message"] = "MCP 2026 works" },
+        cancellationToken: timeout.Token);
+    var echoedText = result.Content
+        .OfType<TextContentBlock>()
+        .Single()
+        .Text;
+
+    if (echoedText != "MCP 2026 works")
+    {
+        throw new InvalidOperationException($"Unexpected echo result: {echoedText}");
+    }
+
+    Console.WriteLine(
+        $"HTTP smoke test passed; protocol={client.NegotiatedProtocolVersion}; tools={string.Join(",", actualTools)}");
 }
-
-var result = await client.CallToolAsync(
-    "echo",
-    new Dictionary<string, object?> { ["message"] = "MCP 2026 works" },
-    cancellationToken: timeout.Token);
-var echoedText = result.Content
-    .OfType<TextContentBlock>()
-    .Single()
-    .Text;
-
-if (echoedText != "MCP 2026 works")
+finally
 {
-    throw new InvalidOperationException($"Unexpected echo result: {echoedText}");
+    if (!server.HasExited)
+    {
+        server.Kill(entireProcessTree: true);
+        await server.WaitForExitAsync();
+    }
 }
-
-Console.WriteLine(
-    $"stdio smoke test passed; protocol={client.NegotiatedProtocolVersion}; tools={string.Join(",", actualTools)}");

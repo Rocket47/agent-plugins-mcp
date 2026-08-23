@@ -9,16 +9,13 @@ namespace AgentPluginsMcp.Server.Tools;
 public sealed class DeveloperTools
 {
     [McpServerTool(Name = "echo")]
-    [Description("Returns the supplied text unchanged. Useful for checking MCP connectivity.")]
     public static string Echo(
         [Description("Text to return.")] string message) => message;
 
     [McpServerTool(Name = "get_utc_time")]
-    [Description("Returns the current UTC time in ISO 8601 format.")]
     public static string GetUtcTime() => DateTimeOffset.UtcNow.ToString("O");
 
     [McpServerTool(Name = "calculate_sha256")]
-    [Description("Calculates the SHA-256 digest of UTF-8 text and returns lowercase hexadecimal.")]
     public static string CalculateSha256(
         [Description("UTF-8 text to hash.")] string text)
     {
@@ -27,7 +24,6 @@ public sealed class DeveloperTools
     }
 
     [McpServerTool(Name = "analyze_text")]
-    [Description("Counts characters, Unicode runes, words, and lines in text.")]
     public static TextStatistics AnalyzeText(
         [Description("Text to analyze.")] string text)
     {
@@ -49,14 +45,7 @@ public sealed class DeveloperTools
             }
         }
 
-        var lineCount = text.Length == 0 ? 0 : 1;
-        for (var index = 0; index < text.Length; index++)
-        {
-            if (text[index] == '\n')
-            {
-                lineCount++;
-            }
-        }
+        var lineCount = (text.Length == 0 ? 0 : 1) + text.Count(t => t == '\n');
 
         return new TextStatistics(
             Characters: text.Length,

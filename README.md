@@ -1,23 +1,49 @@
 # Developer Utilities MCP
 
-Пример переносимого Agent Plugin 1.0.0 с MCP-сервером на .NET. Сервер использует официальный C# SDK 2.0 и поддерживает MCP `2026-07-28`.
+Stateless Streamable HTTP MCP-сервер на .NET 10. Использует официальный C# SDK 2.0 и поддерживает MCP `2026-07-28`.
 
-## Что реализовано
+## Возможности
 
-- stateless Streamable HTTP endpoint `POST /mcp` — основной режим для MCP `2026-07-28`;
-- stdio transport для запуска сервером-совместимым клиентом из `mcp.json`;
-- `server/discover` и обратная совместимость обеспечиваются официальным SDK;
-- четыре stateless-инструмента: `echo`, `get_utc_time`, `calculate_sha256` и `analyze_text`;
-- стандартные файлы Agent Plugins 1.0.0: `plugin.json` и `mcp.json`.
+Сервер предоставляет четыре инструмента:
+
+- `echo` — возвращает переданный текст;
+- `get_utc_time` — возвращает текущее UTC-время;
+- `calculate_sha256` — вычисляет SHA-256;
+- `analyze_text` — считает символы, Unicode-кодовые точки, слова и строки.
+
+Доступны два HTTP endpoint:
+
+- `GET /health` — проверка состояния;
+- `POST /mcp` — stateless Streamable HTTP MCP.
+
+STDIO transport намеренно не поддерживается.
 
 ## Требования
 
 - .NET SDK 10.0 или новее;
-- клиент с поддержкой MCP `2026-07-28` либо совместимый клиент предыдущей версии.
+- MCP-клиент с поддержкой Streamable HTTP.
 
-## Сборка исполняемого приложения
+## Запуск из исходников
 
-Репозиторий содержит обычное исполняемое ASP.NET Core-приложение и solution `AgentPluginsMcp.slnx`:
+```bash
+dotnet run --project src/AgentPluginsMcp.Server/AgentPluginsMcp.Server.csproj
+```
+
+По умолчанию сервер слушает `http://localhost:5000`:
+
+```text
+http://localhost:5000/health
+http://localhost:5000/mcp
+```
+
+Другой адрес можно задать через стандартную переменную ASP.NET Core:
+
+```bash
+ASPNETCORE_URLS=http://127.0.0.1:5050 \
+  dotnet run --project src/AgentPluginsMcp.Server/AgentPluginsMcp.Server.csproj
+```
+
+## Сборка приложения
 
 ```bash
 dotnet build AgentPluginsMcp.slnx --configuration Release
@@ -31,68 +57,18 @@ dotnet build AgentPluginsMcp.slnx --configuration Release
 ./scripts/publish.ps1
 ```
 
-Публикация создаёт в `bin/` готовое framework-dependent приложение:
-
-```text
-bin/
-├── AgentPluginsMcp.Server       # нативный launcher на macOS/Linux
-├── AgentPluginsMcp.Server.exe   # launcher при публикации на Windows
-├── AgentPluginsMcp.Server.dll   # переносимая .NET-сборка
-└── *.deps.json / *.runtimeconfig.json / зависимости
-```
-
-Именно опубликованную `bin/AgentPluginsMcp.Server.dll`, а не исходный проект, запускает `mcp.json`. Каталог `bin/` не коммитится: он создаётся при сборке и включается в распространяемый архив Agent Plugin.
-
-## Быстрый старт: HTTP
+Готовое framework-dependent приложение появится в `bin/`. Запуск опубликованной версии:
 
 ```bash
-dotnet restore src/AgentPluginsMcp.Server/AgentPluginsMcp.Server.csproj
-dotnet run --project src/AgentPluginsMcp.Server/AgentPluginsMcp.Server.csproj
+ASPNETCORE_URLS=http://127.0.0.1:5000 \
+  dotnet bin/AgentPluginsMcp.Server.dll
 ```
 
-По умолчанию сервер слушает `http://localhost:5000`, MCP endpoint доступен по адресу `http://localhost:5000/mcp`, а health check — по адресу `http://localhost:5000/health`.
-
-Порт можно изменить стандартным способом ASP.NET Core:
-
-```bash
-ASPNETCORE_URLS=http://127.0.0.1:5050 \
-  dotnet run --project src/AgentPluginsMcp.Server/AgentPluginsMcp.Server.csproj
-```
-
-## Быстрый старт: stdio
-
-```bash
-dotnet run \
-  --project src/AgentPluginsMcp.Server/AgentPluginsMcp.Server.csproj \
-  --configuration Release \
-  --no-launch-profile \
-  -- \
-  --transport stdio
-```
-
-В stdio-режиме логи направляются в `stderr`, чтобы не повреждать JSON-RPC сообщения в `stdout`.
+Каталог `bin/` создаётся при публикации и не коммитится.
 
 ## Agent Plugin
 
-Корень репозитория уже является пакетом Agent Plugin:
-
-```text
-.
-├── plugin.json
-├── mcp.json
-└── src/
-    └── AgentPluginsMcp.Server/
-```
-
-`mcp.json` объявляет stdio-сервер. Совместимый клиент подставляет `${PLUGIN_ROOT}` в путь к опубликованной сборке и выполняет эквивалент команды:
-
-```bash
-dotnet "${PLUGIN_ROOT}/bin/AgentPluginsMcp.Server.dll" --transport stdio
-```
-
-Подстановка применяется в `args`, но не в `command`, поэтому исполняемой командой указан доступный через `PATH` хост `dotnet`.
-
-Пример удалённой конфигурации после публикации HTTP-сервера:
+`mcp.json` объявляет HTTP-подключение:
 
 ```json
 {
@@ -100,32 +76,48 @@ dotnet "${PLUGIN_ROOT}/bin/AgentPluginsMcp.Server.dll" --transport stdio
   "mcpServers": {
     "developer-utilities": {
       "type": "streamable-http",
-      "url": "https://example.com/mcp"
+      "url": "http://127.0.0.1:5000/mcp"
     }
   }
 }
 ```
 
-Секреты нельзя помещать в `mcp.json`: стандарт Agent Plugins 1.0.0 оставляет аутентификацию клиенту.
+Перед использованием локального плагина сервер необходимо запустить отдельно. Для удалённого развёртывания замените URL в `mcp.json` на публичный HTTPS endpoint.
 
-## Проверка
+## Подключение к Codex
+
+Запустите сервер, затем зарегистрируйте его:
 
 ```bash
-dotnet build AgentPluginsMcp.slnx --configuration Release
+codex mcp add developer-utilities --url http://127.0.0.1:5000/mcp
+```
+
+Проверка:
+
+```bash
+codex mcp list
+```
+
+После изменения конфигурации перезапустите Codex.
+
+## Тестирование
+
+Smoke-тест самостоятельно запускает опубликованный HTTP-сервер на порту `5050`, выполняет `server/discover`, `tools/list` и `tools/call`, затем останавливает процесс:
+
+```bash
 ./scripts/publish.sh
 dotnet run --project tests/AgentPluginsMcp.SmokeTests/AgentPluginsMcp.SmokeTests.csproj
 ```
 
-После запуска HTTP-сервера:
+Ручная проверка запущенного сервера:
 
 ```bash
-curl http://localhost:5000/health
+curl http://127.0.0.1:5000/health
 ```
 
-Для полного диалога MCP используйте клиент или [MCP Inspector](https://github.com/modelcontextprotocol/inspector).
 ## Источники
 
 - [Agent Plugins 1.0.0](https://agent-plugins.org/)
-- [Формат `plugin.json`](https://agent-plugins.org/plugin-authors/manifest)
 - [Формат `mcp.json`](https://agent-plugins.org/plugin-authors/mcp-servers)
 - [MCP 2026-07-28](https://blog.modelcontextprotocol.io/posts/2026-07-28/)
+- [Официальный C# SDK](https://github.com/modelcontextprotocol/csharp-sdk)
